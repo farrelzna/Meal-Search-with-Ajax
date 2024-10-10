@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cari Makanan</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 p-5">
+    <div class="container mx-auto">
+      <h1 class="text-4xl font-extrabold mb-5 text-center text-gray-800">
+        Cari Makanan
+      </h1>
+
+      <!-- Form untuk mencari makanan -->
+      <form id="search-form" class="mb-5 flex flex-col items-center">
+        <input
+          type="text"
+          id="search-input"
+          class="w-full md:w-2/3 p-3 border border-gray-300 rounded-lg shadow-sm"
+          placeholder="Masukkan nama makanan..."
+        />
+        <button
+          type="submit"
+          class="mt-4 px-5 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition"
+        >
+          Cari
+        </button>
+      </form>
+
+      <!-- Tempat menampilkan hasil pencarian -->
+      <div
+        id="search-results"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      ></div>
+
+      <!-- Tempat menampilkan detail makanan -->
+      <div id="meal-details" class="mt-10"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Fungsi utama untuk menangani pencarian dan penampilan detail makanan
+        const fetchData = (url, callback) => fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            callback(data.meals);
+
+            // Dispatch custom event when success
+            const successEvent = new CustomEvent('searchSuccess', {
+              detail: { meals: data.meals }
+            });
+            document.dispatchEvent(successEvent);  // Dispatch event
+          })
+          .catch(error => console.error("Error:", error));
+      
+        // Event listener untuk form pencarian
+        document.getElementById("search-form").addEventListener("submit", e => {
+          e.preventDefault();
+          const query = document.getElementById("search-input").value;
+          if (!query) return alert("Masukkan nama makanan!");
+          fetchData(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`, displaySearchResults);
+        });
+        
+        // Menampilkan hasil pencarian
+        const displaySearchResults = meals => {
+          const resultsDiv = document.getElementById("search-results");
+          resultsDiv.innerHTML = meals ? meals.map(meal => `
+            <div class="p-4 bg-white shadow-md rounded-md">
+              <img src="${meal.strMealThumb}" alt="${meal.strMeal}" class="w-full rounded-md mb-3">
+              <h2 class="text-xl font-bold mb-3">${meal.strMeal}</h2>
+              <button class="px-4 py-2 bg-green-500 text-white rounded-md" onclick="getMealDetails(${meal.idMeal})">Lihat Detail</button>
+            </div>
+          `).join('') : '<p class="text-red-500">Tidak ada hasil yang ditemukan.</p>';
+        };
+      
+        // Menampilkan detail makanan
+        const getMealDetails = id => fetchData(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`, meals => {
+          const meal = meals[0];
+          document.getElementById("meal-details").innerHTML = `
+            <div class="p-4 bg-white shadow-md rounded-md">
+              <img src="${meal.strMealThumb}" alt="${meal.strMeal}" class="w-full rounded-md mb-3">
+              <h2 class="text-3xl font-bold mb-3">${meal.strMeal}</h2>
+              <p><strong>Kategori:</strong> ${meal.strCategory}</p>
+              <p><strong>Area:</strong> ${meal.strArea}</p>
+              <p class="mt-3"><strong>Instruksi:</strong> ${meal.strInstructions}</p>
+              <a href="${meal.strYoutube}" target="_blank" class="mt-3 px-4 py-2 bg-red-500 text-white rounded-md inline-block">Lihat di YouTube</a>
+            </div>
+          `;
+        });
+    </script>
+      
+  </body>
+</html>
